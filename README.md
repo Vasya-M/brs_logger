@@ -4,6 +4,7 @@ Check out `output` and `components/SceneRoot.brs` files to see more examle of us
 
 ### Note:
 We cannot automatically update call stack after functions executions because there is no way to have destructors aka in c++. But we can detect whether the logged function is executed or not. I would name it as lazy destructors :D
+
 ---
 ## Getting Started
 ### Install
@@ -111,6 +112,7 @@ With next format ` minutes:seconds.milliseconds`
 ##### `measureExecTime: false`
 If `true` will print execution time of function.
 NOTE: it is inaccurate, and requires additional call `funcLogger()` after function executes.
+
 ---
 ### FuncLogger methods
 ##### `getOffset: function () as integer`
@@ -150,6 +152,7 @@ Use it for skip particular log
 
 ##### `saveState: sub()`
 Will update current state of global field, where we store state
+
 ---
 ### Function Tracker methods
 #### `p: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")`
