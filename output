@@ -1,0 +1,387 @@
+
+------------------------ run usage examples -------------------------
+
+ --> SceneRoot::basicUsage
+    print from basicUsage
+     --> SceneRoot::basicNested_1
+        print from foo_log it works
+         --> SceneRoot::foo_log
+            print from foo_log
+     --> SceneRoot::foo_log
+        print from foo_log
+
+----
+
+ --> SceneRoot::basicUsage_mute
+     --> SceneRoot::basicUsage
+        print from basicUsage
+         --> SceneRoot::basicNested_1
+            print from foo_log it works
+             --> SceneRoot::foo_log
+                print from foo_log
+         --> SceneRoot::foo_log
+            print from foo_log
+
+----
+
+ --> SceneRoot::basicUsage_muteChildren
+     --> SceneRoot::basicUsage
+         --> SceneRoot::basicNested_1
+             --> SceneRoot::foo_log
+         --> SceneRoot::foo_log
+
+----
+
+ --> SceneRoot::basicUsage_muteAll
+     --> SceneRoot::basicUsage
+         --> SceneRoot::basicNested_1
+             --> SceneRoot::foo_log
+         --> SceneRoot::foo_log
+
+----
+
+ --> SceneRoot::basicUsage_lockChildren
+    print from basicUsage_lockChildren
+
+----
+
+ --> SceneRoot::basicUsage_plock
+    print from basicUsage_plock
+     --> FooComponent::basicUsage
+        print from basicUsage
+         --> FooComponent::basicNested_1
+            print from foo_log itworks
+
+----
+
+ --> SceneRoot::basicUsage_tlock
+    print from basicUsage_tlock
+     --> FooComponent::basicUsage
+        print from basicUsage
+         --> FooComponent::basicNested_1
+            print from foo_log itworks
+ --> SceneRoot::foo_log
+    print from foo_log
+
+----
+
+ --> SceneRoot::funcLogger_GoodMeasureExec
+     --> SceneRoot::nestedMesureExec
+     <-- SceneRoot::nestedMesureExec =>  501 (self -  501)
+ <-- SceneRoot::funcLogger_GoodMeasureExec =>  704 (self -  203)
+
+----
+
+ --> SceneRoot::funcLogger_BadMeasureExec
+     --> SceneRoot::nestedMesureExec
+     <-- SceneRoot::nestedMesureExec =>  601 (self -  601)
+ <-- SceneRoot::funcLogger_BadMeasureExec =>  703 (self -  102)
+
+----
+
+    text 2 // always will be printed
+ --> SceneRoot::funcLogger_full_cachingMode
+     --> SceneRoot::foo_log
+        print from foo_log
+    text 1
+    text 3
+
+----
+
+    print from funcLogger_short_cachingMode
+     --> SceneRoot::foo_log
+        print from foo_log
+
+----
+
+
+------------------------ run settings permutations -------------------------
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: false
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: false
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: true
+    printCallTime: false
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: false
+    printCallTime: true
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: false
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: false
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: false
+    printComponentType: true
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: true
+]
+
+
+============ set current func logger settings as [
+    printCallContext: true
+    printComponentType: true
+    printComponentID: true
+    printCallTime: true
+    measureExecTime: true
+]
+
