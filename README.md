@@ -4,13 +4,13 @@ Check out `output` and `components/SceneRoot.brs` files to see more examle of us
 
 ### Note:
 We cannot automatically update call stack after functions executions because there is no way to have destructors aka in c++. But we can detect whether the logged function is executed or not. I would name it as lazy destructors :D
-
+---
 ## Getting Started
-### Install 
+### Install
 Just copy `/source/utilities/FuncLogger.brs` file to your project and add script for needed component.
 Or you can copy code from file above to you utility file.
 ### How to use it
-Just call `logFunc("name of some function")` and save returned value as local variable (see example). 
+Just call `logFunc("name of some function")` and save returned value as local variable (see example).
 Example:
 ```
 sub basicUsage()
@@ -23,7 +23,7 @@ end sub
 
 sub basicNested_1()
   _ = logfunc("basicNested_1")
-  _.p("print from foo_log {0} {1}", "it", "works")
+  _.p("print from basicNested_1 - {0} {1}", "it", "works")
   foo_log()
   ignored_foo_log()
 end sub
@@ -44,12 +44,13 @@ Output:
  --> SceneRoot::basicUsage
     print from basicUsage
      --> SceneRoot::basicNested_1
-        print from foo_log it works
+        print from basicNested_1 - it works
          --> SceneRoot::foo_log
             print from foo_log
      --> SceneRoot::foo_log
         print from foo_log
 ```
+---
 ## API
 ### Global Functions
 #### `funcLogger() as object`
@@ -57,7 +58,7 @@ Returns instance of `FuncLogger`. Also each call `funcLogger()` will update and 
 
 #### `logFunc(funcName as string)`
 Makes log with passed function name.
-same as `funcLogger().logFunc("function name")`
+Same as `funcLogger().logFunc("function name")`
 Parameters:
 * `funcName as string` - name of function that will be logged
 
@@ -80,13 +81,12 @@ Will convert any variable to string if it possible
 Parameters:
 * obj - object that will be converted to string
 * _tab - (oprional) which indentation should be applied for converted object
-
-### FuncLogger object
-#### FuncLogger settings
+---
+### FuncLogger settings
 ##### `cachingMode: "none"`
 Possible values:
 * `"none"` - relatime output.
-* `"full"` - will cache all logs. 
+* `"full"` - will cache all logs.
 * `"short"` - will cache logs only for current call stack. Each time when stack size reaches 0, logs will be cleared.
 
 ##### `printOffset: 4`
@@ -105,14 +105,14 @@ If `true` will print component id.
 If `true` will print name of parent function
 
 ##### `printCallTime: false`
-If `true` will print time when function was called. 
+If `true` will print time when function was called.
 With next format ` minutes:seconds.milliseconds`
 
 ##### `measureExecTime: false`
 If `true` will print execution time of function.
 NOTE: it is inaccurate, and requires additional call `funcLogger()` after function executes.
-
-#### FuncLogger methods
+---
+### FuncLogger methods
 ##### `getOffset: function () as integer`
 Returns current offset according to call's stack
 
@@ -138,7 +138,7 @@ Will print out all cached logs
 
 ##### `logFunc: function(funcName as string)`
 Makes log with passed function name.
-same as global `logFunc("function name")`
+Same as global `logFunc("function name")`
 Parameters:
 * `funcName as string` - name of function that will be logged
 
@@ -149,8 +149,8 @@ Return value:
 Use it for skip particular log
 
 ##### `saveState: sub()`
-will update current state of global field, where we store state
-
+Will update current state of global field, where we store state
+---
 ### Function Tracker methods
 #### `p: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")`
 Formatted log print will be printed/cahced with correct indentation for current function log.
@@ -175,5 +175,4 @@ Will permanently lock funcLogger for current component.
 Same as `lockcomponent()`
 
 #### `tlock: function(value = true as boolean) as object`
-will temporarily lock funcLogger for current component. Unlocks after function executes
-
+Will temporarily lock funcLogger for current component. Unlocks after function executes
