@@ -186,6 +186,9 @@ function funcLogger() as object
         ' @description will log function and increase call stack
         ' @param {string} funcName - fucntion name
         ' @return {AssociativeArray} function tracker object that has interface for work with created log
+        ' patterns for logging all function in file/project
+        ' search pattern: (^ *(sub|function) *(.*)\(.*\).*$)
+        ' replace pattern: $1\n    _ = logfunc("$3")\n
         logFunc: function(funcName as string)
             ctx = getGlobalAA()
             ignoreLog = m._state.disableFuncLogger = true or ctx.disableLogFunc = true or m._isLocked() = true
@@ -224,7 +227,7 @@ function __getFuncTrackerInterface(indicatorNode as object, useMock = false) as 
         p: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")
             if m._doNothing then return m
             if not m.trackerNode.muted then
-                text = _textFormatter.proccesText(text, [_0, _1, _2, _3])
+                text = m._textFormatter.proccesText(text, [_0, _1, _2, _3])
                 ' text = substitute(text, _0, _1, _2, _3) ' old
                 if not m.indicatorNode.printThroughFuncLogger
                     ?m.tab text
@@ -414,7 +417,7 @@ function _getTextFromatter(_offset = 0, _tabsize = 13)
                     end for
                 end for
                 for i = 1 to 4
-                    m.replaceMap["$" + i.toStr()] = "{" + i.toStr() + "}"
+                    m.replaceMap["$" + i.toStr()] = "{" + (i - 1).toStr() + "}"
                 end for
             end if
             for each key in m.replaceMap
