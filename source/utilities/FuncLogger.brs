@@ -6,9 +6,21 @@ function funcLogger() as object
             _callsLog: []
             _absTime: CreateObject("roDateTime").asSeconds()
 
+            ' use printLevels to controll prints from tracking node, eg `_.p("foo")` `_.warn("foo")` 
+            ' use FunctionLogLevel to controll logging function calls, eg `logFunc("func", "tag", 1)` `logFunc("func", "tag", 2)`
+            printLevels: {"off":0, "error":1, "warn":2, "info":3, "debug":4, "trace":5, "all":6} ' direction of including/nesting level <-, ref(https://stackoverflow.com/questions/7745885/log4j-logging-hierarchy-order)
+            enabledTags: { ' empty tag_name `""` means - log all functions and added tags will be ignored, else - only for added tags logs will work
+                "": [-1, "all"] ' all prints and logs are enabled
+            } 
+            ' scheme =     "tag_name": [FunctionLogLevel, printsLevel]
+            ' if you added some tags and "" presented too - added tags will override FunctionLogLevel from `""` for propriate groups
+            ' FunctionLogLevel - integer value, by default it = `0`, `-1` means enable `all`, else it works like `print if passedLevel <= FunctionLogLevel`, so `2` inclides `1 and 0`, bigger value cause more logs :)
+            ' you can omit or write partly {Log/Print}Level for group and just type `"tag_name": []` or  `"tag_name": [-1]`, by default it will be as `[0, "debug"]`
+
             cachingMode: "none" ' "none" - relatime output, "full" - will collect all logs, "short" will collect logs only for current call stack
             printOffset: 4
             disableFuncLogger: false ' set as true for disabling all logs
+            muteLogPrints: false ' set as true to disable prints inside function, note - it will not disable logging of function calls
             printComponentType: true
             printComponentID: false
             printCallContext: false ' print name of parent function
@@ -16,6 +28,16 @@ function funcLogger() as object
             measureExecTime: false ' will print execution time. NOTE: it is inaccurate, requires additional call `funcLogger()` after function executes
             ' print template: CallContext-->ComponentType::FuncName(ComponentID)   CallTime
         }
+
+        ' patch groups values if you laze to input all values
+        state = m.global.funcLoggerState
+        for each tag in state.enabledTags.keys()
+            group = state.enabledTags[tag]
+            if group.count() = 0 then group.push(0)
+            if group.count() = 1 then group.push("debug")
+            state.enabledTags[tag] = group
+        end for
+        m.global.funcLoggerState = state
     end if
 
     _funcLogger = {
@@ -57,7 +79,7 @@ function funcLogger() as object
                             ?TAB(m._state._callStack.count() * m._state.printOffset) " <-- "lastFunc.id" => " execTime " (self - "selfTime")" ' let it here for performance
                         else
                             result = String(m._state._callStack.count() * m._state.printOffset, " ") + " <-- " + lastFunc.id+ " => "  + execTime.toStr() + " (self - " + selfTime.toStr() + ")"
-                            m.log(result, true)
+                            m.print(result, true)
                         end if
                     end if
                 end if
@@ -77,12 +99,12 @@ function funcLogger() as object
         end sub
 
         _isMuted: function () as boolean
-            result = false
+            if m._state.muteLogPrints = true then return true
             for each call in m._state._callStack
                 result = call.globalMute
-                if call.globalMute = true then exit for
+                if call.globalMute = true then return true
             end for
-            return result = true
+            return false
         end function
 
         _isLocked: function () as boolean
@@ -105,6 +127,28 @@ function funcLogger() as object
             return "   " + now.GetMinutes().toStr() + ":" + now.GetSeconds().toStr() + "." + now.GetMilliseconds().toStr()
         end function
 
+        _isLogInEnabledTagGroup: function(logTag as string, funcitonLogLevel as integer)
+            if m._state.enabledTags.count() = 0 then return true ' if enabledTags is empty - means that this feature is disabled
+            for each tag in [logTag, ""]
+                group = m._state.enabledTags[tag]
+                if group <> invalid then 
+                    groupLevel = group[0]
+                    return groupLevel = -1 or funcitonLogLevel <= groupLevel
+                end if
+            end for
+            return false
+        end function
+
+        _getPrintLevel: function(logTag)
+            defaultLevel = m._state.printLevels["debug"]
+            if m._state.enabledTags.count() = 0 then return defaultLevel ' if enabledTags is empty - means that this feature is disabled
+            for each tag in [logTag, ""]
+                group = m._state.enabledTags[tag]
+                if group <> invalid then return m._state.printLevels[group[1]]
+            end for
+            return 0
+        end function
+
         _buildFuntionLog: function (args)
             offset = m.getOffset()
             if m._state.printComponentID and args._top.id <> "" then args.funcName = args.funcName + "(" + args._top.id + ")"
@@ -112,10 +156,11 @@ function funcLogger() as object
                 if args._top <> invalid then componentName = args._top.subtype() else componentName = "Unknown"
                 args.funcName = componentName + "::" + args.funcName
             end if
+
             if m._state.cachingMode = "none"
                 ?TAB(offset) m._callContextName " --> " args.funcName m._getCallTime() ' let it here for performance - TAB vs String(offset, " ")
             else
-                m.log(String(offset, " ") + m._callContextName + " --> " + args.funcName + m._getCallTime(), true)
+                m.print(String(offset, " ") + m._callContextName + " --> " + args.funcName + m._getCallTime(), true)
             end if
             exitTrackerNode = m._getExitTrackerNode(args.funcName)
             functionExitingIndicator = CreateObject("roSGNode","Node")
@@ -124,6 +169,8 @@ function funcLogger() as object
                 tab: String(offset + m._state.printOffset, " ") ' string offset
                 trackerNode: exitTrackerNode
                 printThroughFuncLogger: m._state.cachingMode <> "none"
+                maxPrintLevel: m._getPrintLevel(args.logTag)
+                printLevels: m._state.printLevels
             })
             m.saveState()
             return functionExitingIndicator
@@ -147,20 +194,20 @@ function funcLogger() as object
         ' @param text - text that will be printed
         ' @param [args] - an array of args that will be used for substitution in `text`
         ' @param [ignoreIndentation=false] - determines whether `text` will be printed with current indentation
-        logf: sub(text as object, args = [], ignoreIndentation = false) ' formatted log
+        printf: sub(text as object, args = [], ignoreIndentation = false) ' formatted log
             values = ["", "", "", ""]
             offset = m.getoffset()
             for i = 0 to args.count() - 1
                 values[i] = convertToStr(args[i], offset)
             end for
             text = substitute(text, values[0], values[1], values[2], values[3])
-            m.log(text, ignoreIndentation)
+            m.print(text, ignoreIndentation)
         end sub
 
         ' @description makes log that will be printed/cahced with correct indentation
         ' @param text - text that will be printed
         ' @param [ignoreIndentation=false] - determines whether `text` will be printed with current indentation
-        log: sub(text as string, ignoreIndentation = false)
+        print: sub(text as string, ignoreIndentation = false)
             if not ignoreIndentation then text = String(m.getOffset() + m._state.printOffset, " ") + text
             if m._state.cachingMode = "none"
                 ?text
@@ -185,17 +232,23 @@ function funcLogger() as object
 
         ' @description will log function and increase call stack
         ' @param {string} funcName - fucntion name
+        ' @param {string} logTag - tag which will be use for enable/disable entire group of function logs, like "tts", "timers", "playback"
+        ' @param {integer} funcitonLogLevel - controll level of log inside tag's group, bigger value means more detailed log
         ' @return {AssociativeArray} function tracker object that has interface for work with created log
         ' patterns for logging all function in file/project
         ' search pattern: (^ *(sub|function) *(.*)\(.*\).*$)
         ' replace pattern: $1\n    _ = logfunc("$3")\n
-        logFunc: function(funcName as string)
+        logFunc: function(funcName as string, logTag = "" as string, funcitonLogLevel = 0 as integer)
             ctx = getGlobalAA()
-            ignoreLog = m._state.disableFuncLogger = true or ctx.disableLogFunc = true or m._isLocked() = true
+
+            allowedLog = m._isLogInEnabledTagGroup(logTag, funcitonLogLevel)
+            ignoreLog = m._state.disableFuncLogger = true or ctx.disableLogFunc = true or m._isLocked() = true or not allowedLog
             if ignoreLog then return __getFuncTrackerInterface({}, true)
+
             functionExitingIndicator = m._buildFuntionLog({
                 _top: ctx.top
                 funcName: funcName
+                logTag: logTag
             })
             return __getFuncTrackerInterface(functionExitingIndicator).mute(m._isMuted())
         end function
@@ -220,19 +273,63 @@ function __getFuncTrackerInterface(indicatorNode as object, useMock = false) as 
         indicatorNode: indicatorNode
         trackerNode: indicatorNode.trackerNode
         tab: indicatorNode.tab
+
+        _maxPrintLevel: indicatorNode.maxPrintLevel
+        _printLevels: indicatorNode.printLevels
         _doNothing: useMock
         _textFormatter: _getTextFromatter(indicatorNode.tab.len(), 14)
 
-        ' @description formatted log that will be printed/cahced with correct indentation
+        ' @description print return, will print return value + comment and line Num
+        ' eg: `return _.pReturn(foo1 - foo2, "foo's diff", LINE_NUM)`
+        pReturn: function(result, comment = "", lineNum = -1 as integer)
+            lineNumtext = "" 
+            if lineNum <> -1 then lineNumtext = "::line: " + lineNum.toStr() + ")"
+            funcName = m.trackerNode.id
+            m.info("$1, $2 \n'-- returns: $3",funcName + lineNumtext, comment, result)
+            return result
+        end function
+        
+        ' @description formatted print that will be printed/cahced with correct indentation
+        error: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")
+            return m._print(text, [_0, _1, _2, _3], m._printLevels.error)
+        end function
+        
+        ' @description formatted print that will be printed/cahced with correct indentation
+        warn: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")
+            return m._print(text, [_0, _1, _2, _3], m._printLevels.warn)
+        end function
+
+        ' @description formatted print that will be printed/cahced with correct indentation
+        info: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")
+            return m._print(text, [_0, _1, _2, _3], m._printLevels.info)
+        end function
+
+        ' @description formatted print that will be printed/cahced with correct indentation
+        debug: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")
+            return m._print(text, [_0, _1, _2, _3], m._printLevels.debug)
+        end function
+
+        ' @description short alias to m.debug(...)
         p: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")
+            return m._print(text, [_0, _1, _2, _3], m._printLevels.debug)
+        end function
+
+        ' @description formatted print that will be printed/cahced with correct indentation
+        trace: function (text = "" as string, _0 = "", _1 = "", _2 = "", _3 = "")
+            return m._print(text, [_0, _1, _2, _3], m._printLevels.trace)
+        end function
+
+        ' @description formatted log that will be printed/cahced with correct indentation
+        _print: function (text as string, args as object, level as integer)
             if m._doNothing then return m
+            if not m._isPrintAllowed(level) then return m
             if not m.trackerNode.muted then
-                text = m._textFormatter.proccesText(text, [_0, _1, _2, _3])
+                text = m._textFormatter.proccesText(text, args)
                 ' text = substitute(text, _0, _1, _2, _3) ' old
                 if not m.indicatorNode.printThroughFuncLogger
                     ?m.tab text
                 else
-                    funcLogger().log(m.tab + text, true)
+                    funcLogger().print(m.tab + text, true)
                 end if
             end if
             return m
@@ -288,6 +385,10 @@ function __getFuncTrackerInterface(indicatorNode as object, useMock = false) as 
             end if
             return m
         end function
+
+        _isPrintAllowed: function(printLevel)
+            return printLevel <= m._maxPrintLevel
+        end function
     }
 end function
 
@@ -300,8 +401,8 @@ end function
 '   sub someFunc()
 '       _ =  logfunc("someFunc")
 '   end sub
-function logFunc(funcName as string)
-    return funcLogger().logFunc(funcName)
+function logFunc(funcName as string, logTag = "" as string, funcitonLogLevel = 0 as integer)
+    return funcLogger().logFunc(funcName, logTag, funcitonLogLevel)
 end function
 
 ' @description same as `funcLogger().xlogFunc("...")`
@@ -319,10 +420,38 @@ sub unlockComponent()
     m.disableLogFunc = false
 end sub
 
+' @description will return node path till last parent(scene in most cases)
+' @param {boolean} includeId - will include nodes ID if it is not empty
+function getNodePath(includeId = false as boolean)
+    tryGetNodeId = function(node, includeId)
+        if node.id = "" or  not includeId then return ""
+        return "(" + node.id + ")"
+    end function
+
+    path = [m.top.subtype() + tryGetNodeId(m.top, includeId)]
+    parent = m.top.getParent()
+    while parent <> invalid
+
+        path.Unshift(parent.subtype() + tryGetNodeId(parent, includeId))
+        parent = parent.getParent()
+    end while
+
+    return path.join("->")
+end function
+
 ' @description will convert any variable to string if it possible.
 ' @param obj -  object that will be converted to string
 ' @param [_tab] - which indentation should be applied for converted object
 function convertToStr(obj, _tab = 0, wrapStringInQuotes = false)
+    try ' avoid stakc overflow
+        return __convertToStr(obj, _tab, wrapStringInQuotes)
+    catch e
+        ?"convertToStr::Error:: "e.message
+        return ""
+    end try
+end function
+
+function __convertToStr(obj, _tab = 0, wrapStringInQuotes = false)
     appendTab = function(text, _tab)
         return String(_tab, " ") + text
     end function
@@ -361,6 +490,7 @@ function cut(obj, deep = 0)
         end if
         return value
     end function
+
     if GetInterface(obj, "ifArray") <> invalid then
         newObj = []
         for each item in obj
@@ -375,6 +505,7 @@ function cut(obj, deep = 0)
     else
         return obj
     end if
+    
     return newObj
 end function
 
@@ -404,10 +535,12 @@ function _getTextFromatter(_offset = 0, _tabsize = 13)
         tabSize: _tabSize
         proccesText: function(text as string, args = [])
             text = m._preprocessReplaceMarkers(text)
+            if convertToStr(args[0]) <> "" and text.inStr("{0}") = -1 then text += " {0}" ' fast print first argument without placeholder, eg `_.p("foo = ", 10)`
             text = m._safeSubstitute(text, args)
             text = m._postProccessingReplacement(text)
             return text
         end function
+
         _preprocessReplaceMarkers: function(text as string)
             if m.replaceMap = invalid then
                 m.replaceMap = {}
@@ -425,6 +558,7 @@ function _getTextFromatter(_offset = 0, _tabsize = 13)
             end for
             return text
         end function
+
         _safeSubstitute: function(text as string, args = [])
             values = ["", "", "", ""]
             for i = 0 to args.count() - 1
@@ -433,6 +567,7 @@ function _getTextFromatter(_offset = 0, _tabsize = 13)
             text = substitute(text, values[0], values[1], values[2], values[3])
             return text
         end function
+
         _postProccessingReplacement:function(text)
             text = text.Replace("\n", chr(10) + "\n" + String(m.offset, " "))
             lines = text.split("\n")
