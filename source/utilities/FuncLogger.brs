@@ -402,6 +402,7 @@ end function
 '       _ =  logfunc("someFunc")
 '   end sub
 function logFunc(funcName as string, logTag = "" as string, funcitonLogLevel = 0 as integer)
+    if m.global = invalid then return __getFuncTrackerInterface({}, true)
     return funcLogger().logFunc(funcName, logTag, funcitonLogLevel)
 end function
 
