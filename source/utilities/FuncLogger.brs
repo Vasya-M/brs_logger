@@ -75,10 +75,11 @@ function funcLogger() as object
                     if m._state.measureExecTime then ' log time how long node was alive(execution time)
                         execTime = m._getCurrentTime() - lastFunc.startTime
                         selfTime = execTime - lastFunc.nestedTime
+                        indentation = String(m._state._callStack.count() * m._state.printOffset, " ")
                         if m._state.cachingMode = "none"
-                            ?TAB(m._state._callStack.count() * m._state.printOffset) " <-- "lastFunc.id" => " execTime " (self - "selfTime")" ' let it here for performance
+                            ?indentation " <-- "lastFunc.id" => " execTime " (self - "selfTime")" ' let it here for performance
                         else
-                            result = String(m._state._callStack.count() * m._state.printOffset, " ") + " <-- " + lastFunc.id+ " => "  + execTime.toStr() + " (self - " + selfTime.toStr() + ")"
+                            result = indentation + " <-- " + lastFunc.id+ " => "  + execTime.toStr() + " (self - " + selfTime.toStr() + ")"
                             m.print(result, true)
                         end if
                     end if
